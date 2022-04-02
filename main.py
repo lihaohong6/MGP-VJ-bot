@@ -16,6 +16,7 @@ from mgp import get_vocaloid_japan_pages, MGPPage, replace_lyrics_jap, save_edit
 from models.conversion_log import ConversionLog
 from models.lyrics import Type
 from string_utils import extract_lyrics_kai, extract_japanese_lyrics
+from utils import login
 from utils.caching import init_caching
 from utils.input_utils import prompt_choices, prompt_response
 from vocaloid_lyrics_wiki import get_romaji
@@ -164,6 +165,7 @@ def manual_mode():
 def main():
     setup_logger()
     init_caching()
+    login.main()
     choice = prompt_choices("Mode?", ["Manual", "Auto"])
     if choice == 1:
         manual_mode()

@@ -9,7 +9,7 @@ def prompt_response(prompt: str, auto_strip: bool = True,
                     validity_checker: Callable[[str], bool] = lambda x: True) -> str:
     print(prompt)
     if config.alert_input:
-        os.system("say a")
+        print('\a')
     while True:
         s = input()
         if auto_strip:
