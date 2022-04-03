@@ -165,7 +165,6 @@ def manual_mode():
 def main():
     setup_logger()
     init_caching()
-    login.main()
     choice = prompt_choices("Mode?", ["Manual", "Auto"])
     if choice == 1:
         manual_mode()

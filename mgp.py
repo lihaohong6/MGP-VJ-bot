@@ -169,10 +169,13 @@ def replace(jap: str, words: list[Word], logs: ConversionLog) -> Optional[str]:
             word = words.pop(0)
             surface = word.surface
             if jap[index:index + len(surface)] == surface:
-                logs.word_used(word)
-                result.append("{{{{photrans|{}|{}}}}}".format(word.surface, word.hiragana))
                 index += len(surface)
                 prev = index
+                if string_utils.is_empty(word.hiragana):
+                    result.append(word.surface)
+                else:
+                    logs.word_used(word)
+                    result.append("{{{{photrans|{}|{}}}}}".format(word.surface, word.hiragana))
                 break
     result.append(jap[prev:])
     return "".join(result)
