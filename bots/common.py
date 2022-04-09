@@ -2,7 +2,7 @@ import logging
 from json import JSONDecodeError
 from typing import Callable
 
-from pywikibot.exceptions import SiteDefinitionError
+from pywikibot.exceptions import SiteDefinitionError, OtherPageSaveError
 
 from utils.helpers import completed_task, get_resume_index, sleep_minutes
 from utils.input_utils import prompt_choices
@@ -34,7 +34,7 @@ def run_with_waf(func: Callable[[str], None], page_name: str):
             return
         except Exception as e:
             get_logger().error("For page " + page_name)
-            if isinstance(e, JSONDecodeError) or isinstance(e, SiteDefinitionError):
+            if isinstance(e, JSONDecodeError) or isinstance(e, SiteDefinitionError) or isinstance(e, OtherPageSaveError):
                 get_logger().error("{}.".format(e.__class__) +
                                    "MGP is probably unreachable due to WAF or DDOS. Will try again in 10 minutes.")
                 sleep_minutes(10)

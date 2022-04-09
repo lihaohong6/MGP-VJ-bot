@@ -7,6 +7,7 @@ from utils.logger import get_logger
 
 
 def get_yt_views(vid: str) -> Union[int, None]:
+    vid = vid.strip()
     if vid.find("youtube.") != -1:
         vid = vid[vid.find("=") + 1:]
     elif vid.find("youtu.be") != -1:

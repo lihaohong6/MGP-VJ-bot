@@ -2,7 +2,7 @@ from wikitextparser import WikiText, Template
 
 
 def title_equal(a: str, b: str) -> bool:
-    return a.replace("_", " ") == b.replace("_", " ")
+    return a.strip().replace("_", " ").upper() == b.strip().replace("_", " ").upper()
 
 
 def get_template_by_name(parsed: WikiText, target: str) -> list[Template]:
