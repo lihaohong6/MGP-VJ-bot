@@ -1,3 +1,4 @@
+import signal
 from pathlib import Path
 from time import sleep
 
@@ -29,3 +30,12 @@ def get_resume_index(lst: list) -> int:
         index += 1
     get_logger().info("Resuming with " + str(lst[index]))
     return index
+
+
+def completed_task(t: str):
+    cont = Path("continue.txt")
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    with open(cont, "w") as f:
+        f.write(str(t))
+        f.flush()
+    signal.signal(signal.SIGINT, signal.SIG_DFL)

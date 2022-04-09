@@ -5,8 +5,10 @@ from typing import Optional
 from pywikibot.exceptions import SiteDefinitionError
 
 import config.config
+from bots.common import run_bot
+from utils.japanese_char import get_pronunciations
 from utils.japanese_utils import is_japanese_lyrics, is_fully_translated, convert_kana
-from utils.helpers import sleep_minutes, get_resume_index
+from utils.helpers import sleep_minutes, get_resume_index, completed_task
 from models.conversion_log import ConversionLog
 from models.lyrics import Type
 from utils.input_utils import prompt_response, prompt_choices
@@ -74,6 +76,16 @@ def convert_page_text(page: MGPPage, log: ConversionLog) -> Optional[str]:
     return text
 
 
+def get_edit_summary(logs: ConversionLog):
+    logs_list = ["{}:{}=>{}".format(w1.surface, w1.hiragana, w2.hiragana)
+                 for w1, w2 in logs.used_conversions if w2.hiragana not in get_pronunciations(w2.surface)]
+    logs_list = list(set(logs_list))
+    logs_list.extend(["{}:{}≠>{}".format(w1.surface, w1.hiragana, w2.hiragana)
+                      for w1, w2 in logs.removed_conversions])
+    logs_list.extend(["{}:?".format(c) for c in set(logs.ignored_kanji)])
+    return "添加注音（由[[User:Lihaohong/注音机器人|机器人]]自动添加）({})".format(";".join(logs_list))
+
+
 def process_page(page: MGPPage) -> bool:
     """
     Process a fetched MGP page
@@ -84,7 +96,7 @@ def process_page(page: MGPPage) -> bool:
     logs = ConversionLog()
     text = convert_page_text(page, logs)
     if text:
-        return save_edit(text, page, logs)
+        return save_edit(text, page, get_edit_summary(logs), confirm=True, minor=False)
     return False
 
 
@@ -127,21 +139,4 @@ def manual_mode():
 
 
 def auto_furigana():
-    choice = prompt_choices("Mode?", ["Manual", "Auto"])
-    if choice == 1:
-        manual_mode()
-        return
-    songs: list[str] = fetch_vj_songs()
-    # continue from where the bot stopped last time
-    index = get_resume_index(songs)
-    while index < len(songs):
-        # process the current song in the list
-        song = songs[index]
-        process_song(song)
-        # this song has been finished; disallow SIGINT while file io in progress
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        with open("continue.txt", "w") as f:
-            f.write(str(song))
-            f.flush()
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-        index += 1
+    run_bot(process_song, manual_mode)

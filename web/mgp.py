@@ -195,22 +195,15 @@ def replace_lyrics_jap(jap: str, words: list[Word], logs: ConversionLog) -> Opti
 edit_lock = asyncio.Lock()
 
 
-def save_edit(text: str, page: MGPPage, logs: ConversionLog) -> bool:
+def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool, watch: str = "Watch") -> bool:
     get_logger().info(
         "Pushing changes of " + str(page) +
         " url https://zh.moegirl.org.cn/" + urllib.parse.quote(page.title))
     page.pwb_page.text = text
-    logs_list = ["{}:{}=>{}".format(w1.surface, w1.hiragana, w2.hiragana)
-                 for w1, w2 in logs.used_conversions if w2.hiragana not in get_pronunciations(w2.surface)]
-    logs_list = list(set(logs_list))
-    logs_list.extend(["{}:{}≠>{}".format(w1.surface, w1.hiragana, w2.hiragana)
-                      for w1, w2 in logs.removed_conversions])
-    logs_list.extend(["{}:?".format(c) for c in set(logs.ignored_kanji)])
-    summary = "添加注音（由[[User:Lihaohong/注音机器人|机器人]]自动添加）({})".format(";".join(logs_list))
     get_logger().info(summary)
-    if len(logs_list) == 0 or prompt_choices("Save?", ["Yes", "No"]) == 1:
+    if not confirm or prompt_choices("Save?", ["Yes", "No"]) == 1:
         page.pwb_page.save(summary=summary,
-                           watch="watch", minor=False, asynchronous=False, botflag=True)
+                           watch=watch, minor=minor, asynchronous=False, botflag=True)
         return True
     get_logger().info("Rejected changes proposed to " + page.title)
     return False
@@ -220,7 +213,7 @@ def fetch_vj_songs() -> list[str]:
     """
     Save VJ songs from MGP to a file.
     """
-    song_list_path = Path("vj.txt", "r")
+    song_list_path = Path("vj.txt")
     if not song_list_path.exists():
         with open(song_list_path, "w") as f:
             f.write("\n".join(map(str, get_vocaloid_japan_pages())))
