@@ -1,5 +1,5 @@
 from unittest import TestCase
-from string_utils import *
+from utils.string_utils import *
 
 
 class Test(TestCase):

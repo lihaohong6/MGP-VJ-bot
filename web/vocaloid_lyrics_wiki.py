@@ -1,13 +1,14 @@
 import json
-import logging
 from typing import Optional
 from urllib.parse import quote
 
 import requests
 from bs4 import BeautifulSoup
 
-from japanese_utils import lyrics_match
-from string_utils import is_empty
+from utils.japanese_utils import lyrics_match
+from models.conversion_log import ConversionLog
+from utils.logger import get_logger
+from utils.string_utils import is_empty
 from utils.japanese_char import is_punctuation_or_half_width_katakana, \
     is_english_punctuation
 
@@ -24,7 +25,7 @@ def search(name: str, producer: str) -> list[str]:
             return []
         return urls[0:min(5, len(urls))]
     except Exception as e:
-        logging.error("Could not search on vocaloid lyrics wiki using keyword " + name + ". " + str(e))
+        get_logger().error("Could not search on vocaloid lyrics wiki using keyword " + name + ". " + str(e))
 
 
 def process_japanese(j) -> str:
@@ -80,11 +81,12 @@ def retrieve_lyrics_from_page(url: str) -> Optional[tuple[str, str]]:
     return "".join(japanese_list), "".join(romaji_list)
 
 
-def get_romaji(names: list[str], lyrics_jap: str, producer: str = None) -> Optional[tuple[list[str], list[str]]]:
+def get_romaji(names: list[str], lyrics_jap: str, logs: ConversionLog, producer: str = None) -> Optional[tuple[list[str], list[str]]]:
     """
     Search Vocaloid Lyrics Wiki for a song.
     :param names: A list of possible names for the song. Each name will be searched.
     :param lyrics_jap: The expected Japanese lyrics.
+    :param logs: logging class
     :param producer: Not used. Could use this to further disambiguate songs with the same name.
     :return: If found, a tuple of (1) a list of Japanese lyrics line by line (2) a list of romaji line by line
     Otherwise, return None
@@ -103,7 +105,7 @@ def get_romaji(names: list[str], lyrics_jap: str, producer: str = None) -> Optio
         jap, romaji = res
         # if the japanese lyrics matches the expected japanese lyrics, the correct song is
         # found, so return
-        if lyrics_match(lyrics_jap, jap):
+        if lyrics_match(lyrics_jap, jap, logs):
             jap_list = jap.split("\n")
             romaji_list = romaji.split("\n")
             # FIXME: whether spaces and other special characters are kept should be

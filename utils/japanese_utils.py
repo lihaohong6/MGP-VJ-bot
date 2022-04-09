@@ -1,13 +1,14 @@
 import itertools
-import logging
 from typing import Optional, Union
 
 import config.config
-import yahoo
+from web import yahoo
 from models.conversion_log import ConversionLog, ConversionList
 from models.lyrics import Word, Type
-from string_utils import find_all_matches_in_string, find_symbol_not_in_bracket, is_empty, count_symbol_not_in_bracket
+from utils.string_utils import find_all_matches_in_string, is_empty, count_symbol_not_in_bracket
+from utils.input_utils import prompt_choices
 from utils.japanese_char import is_kana, is_kanji, is_japanese, get_pronunciations, romaji_to_hiragana, kana_to_romaji
+from utils.logger import get_logger
 
 
 def is_japanese_lyrics(lyrics: str) -> bool:
@@ -29,7 +30,7 @@ def is_fully_translated(lyrics: str) -> bool:
     return kanji_count == 0 or no_furigana_count / kanji_count < 0.5
 
 
-def lyrics_match(l1: str, l2: str) -> bool:
+def lyrics_match(l1: str, l2: str, logs: ConversionLog) -> bool:
     total = 0
     mismatch = 0
     mismatch_list = []
@@ -42,7 +43,13 @@ def lyrics_match(l1: str, l2: str) -> bool:
     if mismatch == 0:
         return True
     if mismatch / total < 0.1:
-        logging.warning("Mismatches between Japanese lyrics: " + str(mismatch_list))
+        get_logger().warning("Mismatches between Japanese lyrics: " + str(mismatch_list))
+        if config.config.ignore_minor_diff:
+            res = prompt_choices("Ignore minor difference? ", ['Yes', 'No'])
+            if res == 2:
+                return False
+            logs.ignored_kanji = mismatch_list
+            return True
     return False
 
 
@@ -208,6 +215,7 @@ def convert_kana_line(jap: list[Word], romaji: str) -> Optional[list[Word]]:
 
 def match_kanji_with_romaji(jap: list[Word], match: list[int],
                             romaji: str, romaji_list: list[str]) -> Optional[tuple[int, list[Word]]]:
+    # FIXME: weight issues with 1回 いっかい
     """
     Match a list of Japanese words with romaji
     :param jap: List of Japanese words
@@ -295,7 +303,7 @@ def convert_kana(jap: list[str], romaji: list[str], logs: ConversionLog, page_id
     # this will give a preliminary furigana
     word_list = yahoo.get_furigana("\n".join(jap), page_id)
     if not word_list:
-        logging.debug("No Yahoo furigana returned")
+        get_logger().warning("No Yahoo furigana returned")
         return None
     # process line by line
     for index, j in enumerate(jap):
@@ -305,7 +313,7 @@ def convert_kana(jap: list[str], romaji: list[str], logs: ConversionLog, page_id
         # match the list of words to the expected romaji for this line
         line = convert_kana_line(words, romaji[index])
         if line is None:
-            logging.warning("Line {} cannot be matched with {}.".format(j, romaji[index]))
+            get_logger().warning("Line {} cannot be matched with {}.".format(j, romaji[index]))
             # if strict, then fail immediately
             if config.config.line_strict:
                 return None

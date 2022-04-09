@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from main import convert_page_text
+from bots.auto_furigana import convert_page_text
 from mgp import MGPPage
 
 

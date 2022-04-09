@@ -8,6 +8,7 @@ import pykakasi
 from jamdict import Jamdict
 
 from models.two_way_dict import hiragana_dict, katakana_dict
+from utils.logger import get_logger
 
 jam = Jamdict()
 cursor = jam.kd2.ctx()
@@ -114,7 +115,7 @@ def romaji_to_hiragana(romaji: str, report_error: bool = False) -> Optional[str]
         return "".join(result)
     except Exception as e:
         if report_error:
-            logging.error("Cannot convert " + romaji + " to hiragana.")
+            get_logger().error("Cannot convert " + romaji + " to hiragana.")
         return None
 
 
@@ -132,7 +133,12 @@ def char_to_romaji(kana: str) -> list[str]:
         'ぃ': ['i'],
         'ぅ': ['u'],
         'ぇ': ['e'],
-        'ぉ': ['o']
+        'ぉ': ['o'],
+        'ァ': ['a'],
+        'ィ': ['i'],
+        'ゥ': ['u'],
+        'ェ': ['e'],
+        'ォ': ['o']
     }
     if kana in special:
         return special[kana]
@@ -140,7 +146,7 @@ def char_to_romaji(kana: str) -> list[str]:
         return [hiragana_dict[kana]]
     if kana in katakana_dict:
         return [katakana_dict[kana]]
-    logging.warning("Failed to convert " + kana + " to romaji.")
+    get_logger().warning("Failed to convert " + kana + " to romaji.")
     return [kana]
 
 
@@ -166,7 +172,7 @@ def kana_to_romaji(kana_original: str) -> list[str]:
             back = recursive_to_romaji(kana[index + 1:])
             # FIXME: use wildcard
             pronunciation = front[-1][0][-1] if len(front) > 0 else ""
-            return front + [[pronunciation]] + back
+            return front + [[pronunciation, '']] + back
         if len(kana) >= 2 and kana[:2] in hiragana_dict or kana[:2] in katakana_dict:
             return [char_to_romaji(kana[:2])] + recursive_to_romaji(kana[2:])
         return [char_to_romaji(kana[0])] + recursive_to_romaji(kana[1:])

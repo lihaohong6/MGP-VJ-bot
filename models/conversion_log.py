@@ -13,6 +13,7 @@ class ConversionLog:
     invalid_conversions: ConversionList = field(default_factory=list)
     removed_conversions: ConversionList = field(default_factory=list)
     all_words: list[Word] = field(default_factory=list)
+    ignored_kanji: list[str] = field(default_factory=list)
 
     def word_used(self, word: Word):
         self.all_words.append(word)

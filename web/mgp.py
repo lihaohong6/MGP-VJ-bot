@@ -1,10 +1,9 @@
 import asyncio
 import json
-import logging
-import pickle
 import re
 import urllib.parse
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional
 
 import pywikibot
@@ -12,15 +11,16 @@ import requests
 from bs4 import BeautifulSoup
 from pywikibot import Page
 
-import string_utils
+from utils import string_utils
 from config.config import replacement_redo_limit
-from japanese_utils import get_invalid_furigana
+from utils.japanese_utils import get_invalid_furigana
 from models.conversion_log import ConversionLog, ConversionList
 from models.lyrics import Word, Type
-from string_utils import find_in_string
-from utils.caching import save_object, load_object
+from utils.string_utils import find_in_string
+from utils.caching import load_object
 from utils.input_utils import prompt_choices
 from utils.japanese_char import is_kanji, get_pronunciations
+from utils.logger import get_logger
 
 
 @dataclass
@@ -59,7 +59,7 @@ def get_pages_in_cat(cat: str) -> list[str]:
     page_num = 1
     while True:
         response = json.loads(requests.get(url.format(prev)).text)
-        logging.info("Processing page {}".format(page_num))
+        get_logger().info("Processing page {}".format(page_num))
         page_list = response['query']['categorymembers']
         for page in page_list:
             result.append(page['title'])
@@ -144,6 +144,7 @@ def filter_invalid_furigana(words: list[Word], conversions: ConversionList, log:
 
 def replace(jap: str, words: list[Word], logs: ConversionLog) -> Optional[str]:
     words_original = list(words)
+    words = list(words_original)
     prev = 0
     result = []
     index = 0
@@ -156,7 +157,7 @@ def replace(jap: str, words: list[Word], logs: ConversionLog) -> Optional[str]:
                 bracket += 1
             elif jap[index] == '}':
                 bracket -= 1
-        if not is_kanji(ch) or bracket > 0:
+        if not is_kanji(ch) or bracket > 0 or ch in logs.ignored_kanji:
             index += 1
             continue
         result.append(jap[prev:index])
@@ -171,10 +172,10 @@ def replace(jap: str, words: list[Word], logs: ConversionLog) -> Optional[str]:
             if jap[index:index + len(surface)] == surface:
                 index += len(surface)
                 prev = index
+                logs.word_used(word)
                 if string_utils.is_empty(word.hiragana):
                     result.append(word.surface)
                 else:
-                    logs.word_used(word)
                     result.append("{{{{photrans|{}|{}}}}}".format(word.surface, word.hiragana))
                 break
     result.append(jap[prev:])
@@ -195,7 +196,7 @@ edit_lock = asyncio.Lock()
 
 
 def save_edit(text: str, page: MGPPage, logs: ConversionLog) -> bool:
-    logging.info(
+    get_logger().info(
         "Pushing changes of " + str(page) +
         " url https://zh.moegirl.org.cn/" + urllib.parse.quote(page.title))
     page.pwb_page.text = text
@@ -204,11 +205,26 @@ def save_edit(text: str, page: MGPPage, logs: ConversionLog) -> bool:
     logs_list = list(set(logs_list))
     logs_list.extend(["{}:{}≠>{}".format(w1.surface, w1.hiragana, w2.hiragana)
                       for w1, w2 in logs.removed_conversions])
+    logs_list.extend(["{}:?".format(c) for c in set(logs.ignored_kanji)])
     summary = "添加注音（由[[User:Lihaohong/注音机器人|机器人]]自动添加）({})".format(";".join(logs_list))
-    logging.info(summary)
+    get_logger().info(summary)
     if len(logs_list) == 0 or prompt_choices("Save?", ["Yes", "No"]) == 1:
         page.pwb_page.save(summary=summary,
                            watch="watch", minor=False, asynchronous=False, botflag=True)
         return True
-    logging.info("Rejected changes proposed to " + page.title)
+    get_logger().info("Rejected changes proposed to " + page.title)
     return False
+
+
+def fetch_vj_songs() -> list[str]:
+    """
+    Save VJ songs from MGP to a file.
+    """
+    song_list_path = Path("vj.txt", "r")
+    if not song_list_path.exists():
+        with open(song_list_path, "w") as f:
+            f.write("\n".join(map(str, get_vocaloid_japan_pages())))
+    with open(song_list_path, "r") as f:
+        songs: list[str] = f.readlines()
+        get_logger().info("VJ song list loaded.")
+        return [s.strip() for s in songs]

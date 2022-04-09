@@ -7,8 +7,9 @@ import pykakasi
 import requests
 
 from utils.caching import get_cache, save_cache
-from utils.japanese_char import is_kanji, is_japanese
+from utils.japanese_char import is_kanji, is_japanese, is_kana
 from models.lyrics import Word, Type
+from utils.logger import get_logger
 
 
 def get_furigana(text: str, page_id: str) -> Optional[list[Word]]:
@@ -36,7 +37,28 @@ def get_furigana(text: str, page_id: str) -> Optional[list[Word]]:
         save_cache(cache_filename, response)
     response = json.loads(response)
     if 'result' not in response:
-        return None
+        get_logger().warning("No response from Yahoo. Using pykakasi as fallback.")
+        kks = pykakasi.Kakasi()
+        sections = []
+        cur = ""
+        prev_type = None
+        for c in text:
+            if is_kanji(c):
+                cur_type = Type.KANJI
+            elif is_kana(c):
+                cur_type = Type.KANA
+            elif c.isalnum():
+                cur_type = Type.ENGLISH
+            else:
+                cur_type = None
+            if cur_type != prev_type or cur_type == Type.KANJI:
+                if prev_type is not None:
+                    hira = "".join([part['hira'] for part in kks.convert(cur)])
+                    sections.append(Word(surface=cur, hiragana=hira, type=prev_type))
+                cur = ""
+                prev_type = cur_type
+            cur += c
+        return sections
     response = response['result']['word']
     result = []
     for r in response:
@@ -55,7 +77,7 @@ def get_furigana(text: str, page_id: str) -> Optional[list[Word]]:
                 else:
                     kks = pykakasi.Kakasi()
                     furigana = "".join([word['hira'] for word in kks.convert(surface)])
-                    logging.warning("Yahoo does not provide furigana for " + surface + ". " +
+                    get_logger().warning("Yahoo does not provide furigana for " + surface + ". " +
                                     "Using " + furigana + " from pykakasi as fallback.")
                 result.append(Word(surface=surface, type=Type.KANJI,
                                    hiragana=furigana))

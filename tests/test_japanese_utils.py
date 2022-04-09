@@ -1,5 +1,5 @@
 from unittest import TestCase
-from japanese_utils import *
+from utils.japanese_utils import *
 from utils.japanese_char import romaji_to_hiragana
 
 
