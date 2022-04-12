@@ -64,7 +64,7 @@ def add_youtube_count(song_box: Template) -> bool:
         if youtube_occurrence > 1:
             get_logger().warning("Youtube appeared more than once in " + other_info.value + ", skipping...")
         return False
-    youtube_match = re.search("[Yy]ou[Tt]ube，?再生[数數]为", other_info.value)
+    youtube_match = re.search("[Yy]ou[Tt]ube[，,]?再生[数數]为", other_info.value)
     if youtube_match is None:
         get_logger().error("YT Id " + yt_id + " found but no YT text in " + other_info.value)
         return False

@@ -1,12 +1,19 @@
 from unittest import TestCase
 
 from bots.auto_furigana import convert_page_text
-from mgp import MGPPage
+from models.conversion_log import ConversionLog
+from web.mgp import MGPPage
 
+class Object(object):
+    pass
 
 class SystemsTest(TestCase):
     def test_convert_page_text(self):
-        page = MGPPage(["雨声残响", "雨き声残響"], id="", text="""{{VOCALOID传说曲题头}}
+        page = Object()
+        setattr(page, 'song_names', ["雨き声残響"])
+        setattr(page, 'id', '123')
+        setattr(page, 'title', '雨声残响')
+        setattr(page, 'wikitext', """{{VOCALOID传说曲题头}}
 {{VOCALOID_Songbox
 |image    = 雨声残响.jpg
 |图片信息 = Illustration by 巨大ねこ
@@ -104,7 +111,7 @@ class SystemsTest(TestCase):
 
 [[分类:日本音乐作品]][[Category:使用VOCALOID的歌曲]][[分类:IA歌曲]]
 """)
-        logs = []
+        logs = ConversionLog()
         res = convert_page_text(page, logs)
         expected = """{{VOCALOID传说曲题头}}
 {{VOCALOID_Songbox

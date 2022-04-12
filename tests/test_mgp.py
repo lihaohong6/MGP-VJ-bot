@@ -1,19 +1,22 @@
 from copy import deepcopy
 from unittest import TestCase
-from mgp import *
-from models.lyrics import Type
+
+from models.conversion_log import ConversionLog
+from models.lyrics import Type, Word
+from web.mgp import replace_lyrics_jap, get_titles, filter_invalid_furigana
 
 
 class Test(TestCase):
     def test_replace_lyrics_jap(self):
-        lyrics = "自分より下手くそな人"
+        lyrics = "自分より下手くそな人{{ruby|别管我|べぐあんを}}あああ"
         words = [Word("自分", Type.KANJI, hiragana="じぶん"),
                  Word("下手", Type.KANJI, hiragana="へた"),
-                 Word("人", Type.KANJI, hiragana="ひと")]
-        expected = "{{photrans|自分|じぶん}}より{{photrans|下手|へた}}くそな{{photrans|人|ひと}}"
+                 Word("人", Type.KANJI, hiragana="ひと"),
+                 Word("别管我", Type.KANJI, hiragana="あ")]
+        expected = "{{photrans|自分|じぶん}}より{{photrans|下手|へた}}くそな{{photrans|人|ひと}}{{ruby|别管我|べぐあんを}}あああ"
         self.assertEqual(expected,
                          replace_lyrics_jap(lyrics, words, ConversionLog()))
-        lyrics = "自分より{{photrans|下手|へた}}くそな人"
+        lyrics = "自分より{{photrans|下手|へた}}くそな人{{ruby|别管我|べぐあんを}}あああ"
         words.append(Word("啊", Type.KANJI, hiragana="あ"))
         self.assertEqual(expected,
                          replace_lyrics_jap(lyrics, words, ConversionLog()))
