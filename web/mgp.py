@@ -110,12 +110,12 @@ def get_titles(text: str, existing: list[str]) -> list[str]:
 
 def get_page(page_name: str) -> MGPPage:
     # Note: pages are not cached (for now)
-    cache_filename = "MGPPage" + page_name + ".txt"
-    page: MGPPage = load_object(cache_filename)
-    if page is None:
-        page = MGPPage(page_name)
-        page.song_names = get_titles(page.wikitext, [page.title])
-        # save_object(cache_filename, pickle.dumps(page))
+    # cache_filename = "MGPPage" + page_name + ".txt"
+    # page: MGPPage = load_object(cache_filename)
+    # if page is None:
+    page = MGPPage(page_name)
+    page.song_names = get_titles(page.wikitext, [page.title])
+    # save_object(cache_filename, pickle.dumps(page))
     return page
 
 
