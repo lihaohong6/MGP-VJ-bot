@@ -4,7 +4,7 @@ from typing import Optional
 
 from wikitextparser import Argument, Template
 
-from bots.common import run_bot, run_with_waf
+from bots.common import run_vj_bot, run_with_waf
 from utils.helpers import get_resume_index, completed_task
 from utils.input_utils import prompt_choices, prompt_response
 from utils.logger import get_logger
@@ -64,7 +64,7 @@ def add_youtube_count(song_box: Template) -> bool:
         if youtube_occurrence > 1:
             get_logger().warning("Youtube appeared more than once in " + other_info.value + ", skipping...")
         return False
-    youtube_match = re.search("[Yy]ou[Tt]ube[，,]?再生[数數]为", other_info.value)
+    youtube_match = re.search("[Yy]ou[Tt]ube[，,]?再生[数數][为為]", other_info.value)
     if youtube_match is None:
         get_logger().error("YT Id " + yt_id + " found but no YT text in " + other_info.value)
         return False
@@ -92,9 +92,10 @@ def transform_wikitext(song_name: str, wikitext: str) -> Optional[WikiText]:
             res = add_youtube_count(song_box)
             changed = res or changed
             continue
-        for yt_count in yt_count_list:
-            res = update_yt_count(yt_count, song_name)
-            changed = res or changed
+        # disabled because no longer needed
+        # for yt_count in yt_count_list:
+        #     res = update_yt_count(yt_count, song_name)
+        #     changed = res or changed
     return parsed if changed else None
 
 
@@ -104,17 +105,9 @@ def process_song(song_name: str):
     if res is None:
         return
     wikitext = str(res)
-    save_edit(wikitext, page, "由[[User:Lihaohong/再生机器人|机器人]]自动更新YouTube的播放量",
+    save_edit(wikitext, page, "由[[User:Lihaohong/再生机器人|机器人]]自动添加YoutubeCount模板",
               confirm=False, minor=True, watch="nochange")
 
 
-def manual_mode():
-    while True:
-        page_name = prompt_response("Page name?")
-        if is_empty(page_name):
-            return
-        run_with_waf(process_song, page_name)
-
-
 def youtube_fallback():
-    run_bot(process_song, manual_mode)
+    run_vj_bot(process_song)

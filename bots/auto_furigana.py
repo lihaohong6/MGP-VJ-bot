@@ -5,7 +5,7 @@ from typing import Optional
 from pywikibot.exceptions import SiteDefinitionError
 
 import config.config
-from bots.common import run_bot
+from bots.common import run_vj_bot
 from utils.japanese_char import get_pronunciations
 from utils.japanese_utils import is_japanese_lyrics, is_fully_translated, convert_kana
 from utils.helpers import sleep_minutes, get_resume_index, completed_task
@@ -139,4 +139,4 @@ def manual_mode():
 
 
 def auto_furigana():
-    run_bot(process_song, manual_mode)
+    run_vj_bot(process_song)

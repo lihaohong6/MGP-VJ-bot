@@ -15,7 +15,7 @@ family = 'mgp'
 # The dictionary usernames should contain a username for each site where you
 # have a bot account. If you have a unique username for all sites of a
 # family , you can use '*'
-usernames['mgp']['*'] = 'PetraMagna'
+usernames['mgp']['*'] = 'Lihaohong'
 password_file = "user-password.py"
 
 # The list of BotPasswords is saved in another file. Import it if needed.
