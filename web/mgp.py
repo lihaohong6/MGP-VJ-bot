@@ -203,7 +203,7 @@ def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool
     get_logger().info(summary)
     if not confirm or prompt_choices("Save?", ["Yes", "No"]) == 1:
         page.pwb_page.save(summary=summary,
-                           watch=watch, minor=minor, asynchronous=False, botflag=True)
+                           watch=watch, minor=minor, asynchronous=False, botflag=True, tags="Automation tool")
         return True
     get_logger().info("Rejected changes proposed to " + page.title)
     return False
