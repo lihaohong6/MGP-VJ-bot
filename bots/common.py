@@ -31,7 +31,8 @@ def run_vj_bot(processor: Callable[[str], Any], manual: Callable = None):
 
 
 def run_with_waf(func: Callable[[str], None], page_name: str):
-    while True:
+    retries = 3
+    while retries > 0:
         try:
             func(page_name)
             return
@@ -42,10 +43,10 @@ def run_with_waf(func: Callable[[str], None], page_name: str):
                     isinstance(e, OtherPageSaveError):
                 get_logger().error("{}.".format(e.__class__) +
                                    "MGP is probably unreachable due to WAF or DDOS. Will try again in 10 minutes.")
-                sleep_minutes(10)
+                sleep_minutes(15)
             else:
                 get_logger().error("", exc_info=e)
-                return
+                retries -= 1
 
 
 def get_manual_mode(process_page: Callable[[str], None]):

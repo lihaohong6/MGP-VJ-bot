@@ -16,5 +16,8 @@ def get_yt_views(vid: str) -> Union[int, None]:
     text = requests.get(url).text
     soup = BeautifulSoup(text, "html.parser")
     interaction = soup.select_one('meta[itemprop="interactionCount"][content]')
+    if interaction is None:
+        return None
     views = int(interaction['content'])
     return views
+

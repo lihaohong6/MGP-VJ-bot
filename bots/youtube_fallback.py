@@ -1,13 +1,14 @@
 import logging
 import re
-from typing import Optional
+from re import Match
+from typing import Optional, Callable
 
 from wikitextparser import Argument, Template
 
 from bots.common import run_vj_bot, run_with_waf
 from utils.helpers import get_resume_index, completed_task
 from utils.input_utils import prompt_choices, prompt_response
-from utils.logger import get_logger
+from utils.logger import get_logger, log_str
 from utils.string_utils import is_empty
 from utils.wikitext import get_template_by_name, title_equal
 from web.mgp import fetch_vj_songs, get_page, save_edit
@@ -52,31 +53,71 @@ def update_yt_count(yt_count: Template, song_name: str) -> bool:
     return True
 
 
-def add_youtube_count(song_box: Template) -> bool:
+def pattern1(other_info: str, match: Match) -> Optional[tuple[int, int]]:
+    num_start = match.end()
+    num_match = re.search("[0-9,]+", other_info[num_start:])
+    if num_match.start() >= 2:
+        return None
+    return num_start, num_match.end() + num_start
+
+
+def pattern2(text: str, match: Match) -> Optional[tuple[int, int]]:
+    num_start = match.start()
+    parenthesis = re.search("[+]?[(（]", text[num_start:])
+    num_end = num_start + parenthesis.start()
+    return num_start, num_end
+
+
+def pattern3(text: str, match: Match) -> Optional[tuple[int, int]]:
+    return match.start() + 1, match.end() - 1
+
+
+Pattern = Callable[[str, Match], Optional[tuple[int, int]]]
+patterns: dict[str, Pattern] = {
+    "[Yy]ou[Tt]ube.?.?.?[，,]?(再生|播放)[数數量]?[为為]?": pattern1,
+    "[0-9][0-9,]+[+]?[(（][Yy]ou[Tt]ube": pattern2,
+    "[和、，][0-9][0-9,]+[+]": pattern3
+}
+
+
+def find_youtube_count(text: str, song_name: str = "Unknown", log_error: bool = True) -> Optional[tuple[int, int]]:
+    log_file = "revisit.txt"
+    if "删" in text or "最终记录" in text or "重制" in text or "补档" in text:
+        if log_error:
+            get_logger().warning("For page " + song_name + ": suspected re-upload. " + text)
+            log_str(log_file, song_name)
+        return None
+    for pattern, func in patterns.items():
+        match = re.search(pattern, text)
+        if match is not None:
+            res = func(text, match)
+            if res is None:
+                continue
+            return res
+    else:
+        if log_error:
+            get_logger().error("For page " + song_name + ": cannot find pattern in " + text)
+            log_str(log_file, song_name)
+        return None
+
+
+def add_youtube_count(song_box: Template, song_name: str) -> bool:
+    # more patterns:
+    # 123+(YouTube)
+    # YouTube...?.?.?.?.?[0-9][,0-9]+[+]
     yt_id = song_box.get_arg("yt_id")
     other_info = song_box.get_arg("其他资料")
-    if yt_id is None or other_info is None:
+    if yt_id is None or other_info is None or re.search("[Yy]ou[Tt]ube", other_info.value) is None:
         return False
     yt_id = yt_id.value.strip()
     # try to find the raw view count
-    youtube_occurrence = len(re.findall("[Yy]ou[Ttube]", other_info.value))
-    if youtube_occurrence != 1:
-        if youtube_occurrence > 1:
-            get_logger().warning("Youtube appeared more than once in " + other_info.value + ", skipping...")
-        return False
-    youtube_match = re.search("[Yy]ou[Tt]ube[，,]?再生[数數][为為]", other_info.value)
-    if youtube_match is None:
-        get_logger().error("YT Id " + yt_id + " found but no YT text in " + other_info.value)
-        return False
     yt_views = get_yt_views(yt_id)
     if yt_views is None:
         return False
-    num_start = youtube_match.end()
-    num_match = re.search("[0-9,]+", other_info.value[num_start:])
-    if num_match is None or num_match.start() >= 2:
-        # number does not immediately follow string
+    res = find_youtube_count(other_info.value, song_name, log_error=True)
+    if res is None:
         return False
-    num_end = num_start + num_match.end()
+    num_start, num_end = res
     template = "{{" + f"YoutubeCount|id={yt_id}|fallback={yt_views}" + "}}"
     other_info.value = other_info.value[:num_start] + template + other_info.value[num_end:]
     return True
@@ -89,7 +130,7 @@ def transform_wikitext(song_name: str, wikitext: str) -> Optional[WikiText]:
     for song_box in song_boxes:
         yt_count_list = get_template_by_name(song_box, "YoutubeCount")
         if len(yt_count_list) == 0:
-            res = add_youtube_count(song_box)
+            res = add_youtube_count(song_box, song_name)
             changed = res or changed
             continue
         # disabled because no longer needed
