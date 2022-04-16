@@ -58,18 +58,23 @@ def pattern1(other_info: str, match: Match) -> Optional[tuple[int, int]]:
     num_match = re.search("[0-9,]+", other_info[num_start:])
     if num_match.start() >= 2:
         return None
-    return num_start, num_match.end() + num_start
+    num_end = num_match.end() + num_start
+    if len(other_info) > num_end and other_info[num_end] == '+':
+        num_end += 1
+    return num_start, num_end
 
 
 def pattern2(text: str, match: Match) -> Optional[tuple[int, int]]:
     num_start = match.start()
     parenthesis = re.search("[+]?[(（]", text[num_start:])
     num_end = num_start + parenthesis.start()
+    if text[num_end] == '+':
+        num_end += 1
     return num_start, num_end
 
 
 def pattern3(text: str, match: Match) -> Optional[tuple[int, int]]:
-    return match.start() + 1, match.end() - 1
+    return match.start() + 1, match.end()
 
 
 Pattern = Callable[[str, Match], Optional[tuple[int, int]]]
