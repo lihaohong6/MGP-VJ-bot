@@ -37,7 +37,7 @@ class Test(TestCase):
 |其他资料 = 于同日投稿至YouTube，再生数为21,3,,92+<br/>于}}"""
         expected = f"""{{{{VOCALOID_Songbox
 |yt_id = Gexhf83mq3M
-|其他资料 = 于同日投稿至YouTube，再生数为{{{{YoutubeCount|id=Gexhf83mq3M|fallback={get_yt_views(yt_id)}}}}}+<br/>于}}}}"""
+|其他资料 = 于同日投稿至YouTube，再生数为{{{{YoutubeCount|id=Gexhf83mq3M}}}}+<br/>于}}}}"""
         t = Template(wikitext)
         add_youtube_count(t, "")
         self.assertEqual(expected, t.string)
