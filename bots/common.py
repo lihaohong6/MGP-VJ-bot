@@ -4,6 +4,7 @@ from typing import Callable, Any
 
 from pywikibot.exceptions import SiteDefinitionError, OtherPageSaveError
 
+import config.config
 from utils.helpers import completed_task, get_resume_index, sleep_minutes
 from utils.input_utils import prompt_choices, prompt_response
 from utils.logger import get_logger
@@ -41,13 +42,9 @@ def run_with_waf(func: Callable[[str], None], page_name: str):
             if isinstance(e, JSONDecodeError) or \
                     isinstance(e, SiteDefinitionError) or \
                     isinstance(e, OtherPageSaveError):
-                if "腾讯" in repr(e):
-                    get_logger().error("{}.".format(e.__class__) +
-                                       "MGP is probably unreachable due to WAF or DDOS. Will try again in 10 minutes.")
-                    sleep_minutes(15)
-                else:
-                    get_logger().error("", exc_info=e)
-                    retries -= 1
+                get_logger().error("{}.".format(e.__class__) +
+                                   "MGP is probably unreachable due to WAF or DDOS. Will try again in 10 minutes.")
+                sleep_minutes(config.config.waf_sleep)
             else:
                 get_logger().error("", exc_info=e)
                 retries -= 1

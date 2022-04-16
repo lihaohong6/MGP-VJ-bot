@@ -6,6 +6,7 @@ class Mode(Enum):
     AUTO_YOUTUBE_FALLBACK = 1
 
 
+waf_sleep: int = 15
 mode: Mode = Mode.AUTO_YOUTUBE_FALLBACK
 line_strict: bool = False
 skip_words_in_replacement: int = 3
