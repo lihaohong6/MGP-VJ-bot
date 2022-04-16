@@ -105,23 +105,31 @@ def find_youtube_count(text: str, song_name: str = "Unknown", log_error: bool = 
     return None
 
 
+def replace(arg: Argument, yt_id: str, song_name: str) -> bool:
+    if arg is None:
+        return False
+    text = arg.value
+    res = find_youtube_count(text, song_name, log_error=True)
+    if res is None:
+        return False
+    num_start, num_end = res
+    template = "{{" + f"YoutubeCount|id={yt_id}" + "}}"
+    arg.value = text[:num_start] + template + text[num_end:]
+    return True
+
+
 def add_youtube_count(song_box: Template, song_name: str) -> bool:
     yt_id = song_box.get_arg("yt_id")
-    other_info = song_box.get_arg("其他资料")
-    if yt_id is None or other_info is None or re.search("[Yy]ou[Tt]ube", other_info.value) is None:
+    if yt_id is None or re.search("[Yy]ou[Tt]ube", str(song_box)) is None:
         return False
     yt_id = yt_id.value.strip()
     # try to find the raw view count
     yt_views = get_yt_views(yt_id)
     if yt_views is None:
         return False
-    res = find_youtube_count(other_info.value, song_name, log_error=True)
-    if res is None:
-        return False
-    num_start, num_end = res
-    template = "{{" + f"YoutubeCount|id={yt_id}" + "}}"
-    other_info.value = other_info.value[:num_start] + template + other_info.value[num_end:]
-    return True
+    res = replace(song_box.get_arg("其他资料"), yt_id, song_name)
+    res2 = replace(song_box.get_arg("再生"), yt_id, song_name)
+    return res or res2
 
 
 def transform_wikitext(song_name: str, wikitext: str) -> Optional[WikiText]:
