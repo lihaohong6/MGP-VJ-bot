@@ -41,7 +41,7 @@ def run_with_waf(func: Callable[[str], None], page_name: str):
             if isinstance(e, JSONDecodeError) or \
                     isinstance(e, SiteDefinitionError) or \
                     isinstance(e, OtherPageSaveError):
-                if "腾讯" or "WAF" in repr(e):
+                if "腾讯" in repr(e):
                     get_logger().error("{}.".format(e.__class__) +
                                        "MGP is probably unreachable due to WAF or DDOS. Will try again in 10 minutes.")
                     sleep_minutes(15)
