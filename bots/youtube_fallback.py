@@ -125,7 +125,7 @@ def add_youtube_count(song_box: Template, song_name: str) -> bool:
     yt_id = yt_id.value.strip()
     # try to find the raw view count
     yt_views = get_yt_views(yt_id)
-    if yt_views is None:
+    if yt_views is None or yt_views < 10000:
         return False
     res = replace(song_box.get_arg("其他资料"), yt_id, song_name)
     res2 = replace(song_box.get_arg("再生"), yt_id, song_name)
