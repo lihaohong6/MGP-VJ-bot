@@ -89,11 +89,9 @@ youtube_pattern = "[Yy]ou[Tt]ube"
 
 
 def find_youtube_count(text: str, song_name: str = "Unknown", log_error: bool = True) -> Optional[tuple[int, int]]:
-    log_file = "revisit.txt"
     if "删" in text or "最终记录" in text or "重制" in text or "补档" in text:
         if log_error:
             get_logger().warning("For page " + song_name + ": suspected re-upload. " + text)
-            log_str(log_file, song_name)
         return None
     for pattern, func in patterns.items():
         match = re.search(pattern, text)
@@ -104,7 +102,6 @@ def find_youtube_count(text: str, song_name: str = "Unknown", log_error: bool = 
             return res
     if log_error and re.search(youtube_pattern, text) is not None:
         get_logger().error("For page " + song_name + ": cannot find pattern in " + text)
-        log_str(log_file, song_name)
     return None
 
 
@@ -123,7 +120,7 @@ def replace(arg: Argument, yt_id: str, song_name: str) -> bool:
 
 def add_youtube_count(song_box: Template, song_name: str) -> bool:
     yt_id = song_box.get_arg("yt_id")
-    if yt_id is None or re.search(youtube_pattern, str(song_box)) is None:
+    if yt_id is None:
         return False
     yt_id = yt_id.value.strip()
     # try to find the raw view count
@@ -132,7 +129,10 @@ def add_youtube_count(song_box: Template, song_name: str) -> bool:
         return False
     res = replace(song_box.get_arg("其他资料"), yt_id, song_name)
     res2 = replace(song_box.get_arg("再生"), yt_id, song_name)
-    return res or res2
+    result = res or res2
+    if not result:
+        log_str("revisit.txt", song_name)
+    return result
 
 
 def transform_wikitext(song_name: str, wikitext: str) -> Optional[WikiText]:
