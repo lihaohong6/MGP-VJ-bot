@@ -77,13 +77,23 @@ def pattern3(text: str, match: Match) -> Optional[tuple[int, int]]:
     return match.start() + 1, match.end()
 
 
+def pattern4(text: str, match: Match) -> Optional[tuple[int, int]]:
+    before = text[:match.start()]
+    if not is_empty(before):
+        return None
+    after = text[match.end():]
+    if not is_empty(after):
+        return None
+    return match.start(), match.end()
+
+
 Pattern = Callable[[str, Match], Optional[tuple[int, int]]]
 patterns: dict[str, Pattern] = {
     "[Yy]ou[Tt]ube.?.?.?[，,]?(再生|播放)[数數量]?[为為]?": pattern1,
     "[0-9][0-9,]+[+]?[(（][Yy]ou[Tt]ube": pattern2,
-    "[和、，][0-9][0-9,]+[+]": pattern3
+    "[和、，][0-9][0-9,]+[+]": pattern3,
+    "[0-9][0-9,]+[+]": pattern4
 }
-
 
 youtube_pattern = "[Yy]ou[Tt]ube"
 

@@ -62,3 +62,6 @@ class Test(TestCase):
                "2013年12月27日投稿至niconico，再生數為{{NiconicoCount|id=sm22544683}}"
         s, e = find_youtube_count(text)
         self.assertEqual("276,600", text[s:e])
+        text = "   1,000+  "
+        s, e = find_youtube_count(text)
+        self.assertEqual("1,000+", text[s:e])
