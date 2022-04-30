@@ -1,3 +1,4 @@
+import functools
 import itertools
 from typing import Optional, Union
 
@@ -28,6 +29,40 @@ def is_fully_translated(lyrics: str) -> bool:
     # count number of kanji not in a template
     no_furigana_count = count_symbol_not_in_bracket(lyrics, is_kanji)
     return kanji_count == 0 or no_furigana_count / kanji_count < 0.5
+
+
+def furigana_local(lyrics: str) -> str:
+    open_parentheses = ['(', '（']
+    closing_parentheses = [')', '）']
+    lines = lyrics.split("\n")
+    result = []
+    for line in lines:
+        prev_end = 0
+        line_result = []
+        for index in range(len(line)):
+            if index < prev_end:
+                continue
+            if line[index] not in open_parentheses or index == 0 or not is_kanji(line[index - 1]):
+                continue
+            symbol = closing_parentheses[open_parentheses.index(line[index])]
+            close_index = line.find(symbol, index + 1)
+            furigana = line[index + 1:close_index]
+            if close_index == -1 or index + 1 == close_index or \
+                    not functools.reduce(lambda a, b: a and b,
+                                         [is_kana(c) for c in furigana]):
+                continue
+            kanji_start = index - 1
+            while kanji_start >= 0 and is_kanji(line[kanji_start]):
+                kanji_start -= 1
+            kanji_start += 1
+            if kanji_start > 0:
+                line_result.append(line[prev_end:kanji_start])
+            line_result.append(f"{{{{Photrans|{line[kanji_start:index]}|{furigana}"
+                               f"}}}}")
+            prev_end = close_index + 1
+        line_result.append(line[prev_end:])
+        result.append("".join(line_result))
+    return "\n".join(result)
 
 
 def lyrics_match(l1: str, l2: str, logs: ConversionLog) -> bool:

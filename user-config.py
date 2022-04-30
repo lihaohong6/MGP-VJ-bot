@@ -7,7 +7,7 @@
 # this variable, you have to ensure that such a file exists. You may use
 # generate_family_file to create one.
 mylang = 'mgp'
-family_files['mgp'] = 'https://zh.moegirl.org.cn/api.php'
+family_files['mgp'] = 'https://mzh.moegirl.org.cn/api.php'
 family = 'mgp'
 
 # The site code (language) of the site to be working on.
@@ -163,12 +163,12 @@ upload_to_commons = False
 #
 # 'maxlag' is used to control the rate of server access (see below).
 # Set minthrottle to non-zero to use a throttle on read access.
-minthrottle = 5
-maxthrottle = 60
+minthrottle = 1
+maxthrottle = 5
 
 # Slow down the robot such that it never makes a second page edit within
 # 'put_throttle' seconds.
-put_throttle = 10  # type: Union[int, float]
+put_throttle = 20  # type: Union[int, float]
 
 # Sometimes you want to know when a delay is inserted. If a delay is larger
 # than 'noisysleep' seconds, it is logged on the screen.
