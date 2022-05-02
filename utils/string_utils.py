@@ -129,3 +129,7 @@ def extract_japanese_lyrics(text: str) -> Optional[tuple[int, int]]:
     if len(indices) == 2 and is_empty(text[jap_start:jap_start + indices[0]]):
         jap_start = jap_start + indices[1] + 3
     return jap_start, jap_end
+
+
+def strip_each_line(s: str) -> str:
+    return "\n".join([line.strip() for line in s.split("\n")])

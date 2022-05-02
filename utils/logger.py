@@ -16,7 +16,7 @@ def setup_logger():
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S"))
     logger.addHandler(handler)
-    handler = logging.FileHandler("warnings.txt")
+    handler = logging.FileHandler("logs/warnings.txt")
     handler.setLevel(logging.WARNING)
     handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)-5s %(message)s", "%Y-%m-%d %H:%M:%S"))
     logger.addHandler(handler)

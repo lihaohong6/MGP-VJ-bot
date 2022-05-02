@@ -9,17 +9,18 @@ from utils.helpers import completed_task, get_resume_index, sleep_minutes
 from utils.input_utils import prompt_choices, prompt_response
 from utils.logger import get_logger
 from utils.string_utils import is_empty
-from web.mgp import fetch_vj_songs
+from web.mgp import fetch_vj_songs, get_vocaloid_japan_pages
 
 
-def run_vj_bot(processor: Callable[[str], Any], manual: Callable = None):
+def run_vj_bot(processor: Callable[[str], Any], manual: Callable = None,
+               fetch_song_list: Callable[[], list[str]] = get_vocaloid_japan_pages):
     if manual is None:
         manual = get_manual_mode(processor)
     choice = prompt_choices("Mode?", ["Manual", "Auto"])
     if choice == 1:
         manual()
         return
-    songs: list[str] = fetch_vj_songs()
+    songs: list[str] = fetch_vj_songs(fetch_song_list)
     # continue from where the bot stopped last time
     index = get_resume_index(songs)
     while index < len(songs):

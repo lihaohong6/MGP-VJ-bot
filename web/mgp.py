@@ -4,7 +4,7 @@ import re
 import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 import pywikibot
 import requests
@@ -67,6 +67,13 @@ def get_pages_in_cat(cat: str) -> list[str]:
             return result
         prev = response['continue']['cmcontinue']
         page_num += 1
+
+
+def get_pages_embedded(title: str) -> list[str]:
+    s = pywikibot.Site()
+    page = Page(s, title)
+    res: list[Page] = list(s.page_embeddedin(page, namespaces="0"))
+    return [p.title() for p in res]
 
 
 def get_vocaloid_japan_pages() -> list[str]:
@@ -209,14 +216,14 @@ def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool
     return False
 
 
-def fetch_vj_songs() -> list[str]:
+def fetch_vj_songs(fetcher: Callable[[], list[str]]) -> list[str]:
     """
     Save VJ songs from MGP to a file.
     """
     song_list_path = Path("vj.txt")
     if not song_list_path.exists():
         with open(song_list_path, "w") as f:
-            f.write("\n".join(map(str, get_vocaloid_japan_pages())))
+            f.write("\n".join(map(str, fetcher())))
     with open(song_list_path, "r") as f:
         songs: list[str] = f.readlines()
         get_logger().info("VJ song list loaded.")

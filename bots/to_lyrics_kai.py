@@ -1,5 +1,8 @@
 import dataclasses
 import re
+import time
+import urllib
+import webbrowser
 
 import wikitextparser as wtp
 from wikitextparser import Template
@@ -9,12 +12,12 @@ from bots.youtube_fallback import transform_wikitext
 from utils.input_utils import prompt_response, prompt_choices
 from utils.japanese_utils import furigana_local
 from utils.logger import get_logger
-from utils.string_utils import is_empty
+from utils.string_utils import is_empty, strip_each_line
 from utils.wikitext import get_template_by_name
-from web.mgp import get_page, save_edit
+from web.mgp import get_page, save_edit, get_pages_embedded
 
 hover: bool = True
-add_furigana: bool = False
+add_furigana: bool = True
 
 
 @dataclasses.dataclass()
@@ -27,6 +30,11 @@ class Lyrics:
     author: str = None
     hide_disclaimer: bool = False
     lang_original: str = "ja"
+
+
+def later(name: str):
+    with open("logs/later.txt", "a") as f:
+        f.write(name + "\n")
 
 
 def force_same_line_number(left: str, right: str) -> (str, str):
@@ -83,14 +91,13 @@ def post_process_start(lyrics: str) -> str:
     lyrics = list(lyrics)
     for index, char in enumerate(lyrics):
         if char == "\n":
-            lyrics[index] = "<br/>"
+            lyrics[index] = "#NoHover\n"
         else:
             break
     return "".join(lyrics)
 
 
 def post_process_lyrics(original: str, translated: str) -> (str, str):
-    original, translated = expand_br(original), expand_br(translated)
     original, translated = force_same_line_number(original, translated)
     original, translated = remove_lyrics_whitespace(original, translated)
     original, translated = add_no_hover(original, translated)
@@ -116,18 +123,26 @@ def lyrics_to_lyrics_kai(lyrics: Lyrics, song_name: str) -> str | None:
     return "\n".join(lines)
 
 
-def lyrics_to_lyrics(lyrics: Template) -> Lyrics:
+def lyrics_to_lyrics(lyrics: Template) -> Lyrics | None:
     original = []
     translated = []
-    for i in range(1, 10000):
+    for i in range(1, 1000):
+        if lyrics.has_arg(f"lb-color{i}") or lyrics.has_arg(f"rb-color{i}"):
+            return None
         left_arg, right_arg = f"lb-text{i}", f"rb-text{i}"
         if not lyrics.has_arg(left_arg):
-            break
-        left = lyrics.get_arg(left_arg).value
+            left = ""
+        else:
+            left = lyrics.get_arg(left_arg).value
         if lyrics.has_arg(right_arg):
             right = lyrics.get_arg(right_arg).value
         else:
             right = ""
+        if is_empty(left) and is_empty(right):
+            continue
+        left, right = left.strip(), right.strip()
+        left, right = expand_br(left), expand_br(right)
+        left, right = strip_each_line(left), strip_each_line(right)
         left, right = force_same_line_number(left, right)
         original.append(left)
         translated.append(right)
@@ -142,12 +157,19 @@ def lyrics_to_lyrics(lyrics: Template) -> Lyrics:
         if argument is None or is_empty(argument.value):
             continue
         args[arg[0]] = argument.value.strip()
-    return Lyrics("\n".join(original), "\n".join(translated),
+    return Lyrics("\n\n".join(original), "\n\n".join(translated),
                   **args)
 
 
-def convert_lyrics(lyrics: Template, song_name) -> str:
-    return lyrics_to_lyrics_kai(lyrics_to_lyrics(lyrics), song_name)
+def convert_lyrics(lyrics: Template, song_name) -> str | None:
+    converted: Lyrics | None = lyrics_to_lyrics(lyrics)
+    if converted is None:
+        later(song_name)
+        return None
+    no_white_space = converted.translated.strip()
+    if len(no_white_space) / len(converted.translated) < 0.1:
+        return None
+    return lyrics_to_lyrics_kai(converted, song_name)
 
 
 def transform_wikitext(text, song_name) -> str | None:
@@ -155,6 +177,9 @@ def transform_wikitext(text, song_name) -> str | None:
     lyrics = get_template_by_name(parsed, "Lyrics")
     changed = False
     for t in lyrics:
+        if len(get_template_by_name(t, "color")) > 0:
+            later(song_name)
+            return None
         res = convert_lyrics(t, song_name)
         if res is not None:
             t.string = res
@@ -163,14 +188,35 @@ def transform_wikitext(text, song_name) -> str | None:
 
 
 def process_song(song_name: str):
+    # choice = prompt_choices("Action?", ["Convert", "Convert later", "Ignore", "Config"])
+    # if choice == 3:
+    #     return
+    # if choice == 2:
+    #     later(song_name)
+    #     return
+    # if choice == 4:
+    #     global add_furigana
+    #     add_furigana = 1 == prompt_choices("Add furigana?", ["Yes", "No"])
     page = get_page(song_name)
     res = transform_wikitext(page.wikitext, song_name)
     if res is None:
         return
     wikitext = str(res)
+    epoch_time = int(time.time())
+    put_throttle = 20
+    sleep_time = put_throttle - (epoch_time - process_song.throttle)
+    if sleep_time > 0:
+        time.sleep(sleep_time)
+    process_song.throttle = int(time.time())
     save_edit(wikitext, page,
               "由[[User:Lihaohong/LyricsKai转换工具|半自动工具]]自动使用[[T:LyricsKai" + ("/hover" if hover else "") + "]]模板",
               confirm=False, minor=True, watch="watch")
+    webbrowser.get().open("https://zh.moegirl.org.cn/" + urllib.parse.quote(song_name),
+                          new=2,
+                          autoraise=False)
+
+
+process_song.throttle = 0
 
 
 def manual():
@@ -185,4 +231,4 @@ def manual():
 
 
 def lyrics_kai():
-    run_vj_bot(process_song, manual)
+    run_vj_bot(process_song, manual, lambda: get_pages_embedded("T:Lyrics"))
