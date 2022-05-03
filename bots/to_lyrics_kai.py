@@ -177,7 +177,7 @@ def transform_wikitext(text, song_name) -> str | None:
     lyrics = get_template_by_name(parsed, "Lyrics")
     changed = False
     for t in lyrics:
-        if len(get_template_by_name(t, "color")) > 0:
+        if len(get_template_by_name(t, "color")) > 0 or len(get_template_by_name(t, "cj")) > 0:
             later(song_name)
             return None
         res = convert_lyrics(t, song_name)
