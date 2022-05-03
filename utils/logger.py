@@ -6,6 +6,7 @@ logger = logging.getLogger()
 
 
 def setup_logger():
+    Path("logs").mkdir(exist_ok=True)
     global logger
     logger = logging.getLogger("application")
     logger.setLevel(logging.DEBUG)
