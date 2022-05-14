@@ -1,14 +1,12 @@
 import json
 import urllib.parse
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
-import cv2
 import requests
 import wikitextparser as wtp
 
-from bots.common import run_vj_bot, get_manual_mode
+from bots.common import run_vj_bot
 from utils.image import download_file
 from utils.logger import get_logger
 from utils.wikitext import get_template_by_name
@@ -33,13 +31,14 @@ def get_bounding_rect(gray, crop_threshold: float) -> (int, int, int, int):
 
 
 def remove_black_boarders(image_in: str, image_out: str, crop_threshold: float) -> bool:
-    img = cv2.imread(image_in)
+    # img = cv2.imread(image_in)
     # TODO: show image in a loop and let user decide
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    x1, x2, y1, y2 = get_bounding_rect(gray, crop_threshold)
-    crop = img[y1:y2, x1:x2]
+    # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # x1, x2, y1, y2 = get_bounding_rect(gray, crop_threshold)
+    # crop = img[y1:y2, x1:x2]
 
-    cv2.imwrite(image_out, crop)
+    # cv2.imwrite(image_out, crop)
+    raise NotImplementedError("Wait till this feature is implemented.")
     return True
 
 

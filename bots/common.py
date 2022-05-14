@@ -60,3 +60,8 @@ def get_manual_mode(process_page: Callable[[str], None]):
             run_with_waf(process_page, page_name)
 
     return manual_mode
+
+
+def throttle(time: int):
+    pass
+

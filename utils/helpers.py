@@ -15,7 +15,7 @@ def wake_up():
 def sleep_minutes(minute: int):
     global keep_sleeping
     keep_sleeping = True
-    signal.signal(signal.SIGINT, wake_up)
+    prev_handler = signal.signal(signal.SIGINT, wake_up)
     try:
         get_logger().info("Sleeping for " + str(minute) + " minutes")
         counter = 0
@@ -23,11 +23,11 @@ def sleep_minutes(minute: int):
             sleep(60)
             counter += 1
             get_logger().info("{} minute(s) remaining...".format(minute - counter))
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, prev_handler)
         return
     except Exception as e:
         get_logger().info("Sleep interrupted by " + str(e))
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, prev_handler)
         return
 
 
@@ -46,8 +46,8 @@ def get_resume_index(lst: list) -> int:
 
 def completed_task(t: str):
     cont = Path("continue.txt")
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    prev_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
     with open(cont, "w") as f:
         f.write(str(t))
         f.flush()
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGINT, prev_handler)

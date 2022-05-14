@@ -2,6 +2,7 @@ import pywikibot
 
 import config.config
 from bots.auto_furigana import auto_furigana
+from bots.bilibili_video import bilibili_video
 from bots.to_lyrics_kai import lyrics_kai
 from bots.youtube_fallback import youtube_fallback
 from config.config import Mode
@@ -19,7 +20,8 @@ def main():
     m = {
         Mode.AUTO_FURIGANA: auto_furigana,
         Mode.AUTO_YOUTUBE_FALLBACK: youtube_fallback,
-        Mode.AUTO_LYRICS_KAI: lyrics_kai
+        Mode.AUTO_LYRICS_KAI: lyrics_kai,
+        Mode.BILIBILI_VIDEO: bilibili_video
     }
     m[config.config.mode]()
 

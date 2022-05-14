@@ -1,7 +1,6 @@
 wheel
 setuptools
 beautifulsoup4==4.10.0
-bs4==0.0.1
 certifi==2021.10.8
 charset-normalizer==2.0.12
 chirptext==0.1.2
@@ -11,7 +10,6 @@ jaconv==0.3
 jamdict==0.1a11.post2
 jamdict-data==1.5
 numpy==1.22.3
-opencv-python==4.5.5.64
 puchikarui==0.1
 pykakasi==2.2.1
 pywikibot==7.0.0
