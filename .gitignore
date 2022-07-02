@@ -1,10 +1,9 @@
 # random stuff
 lists/logs.txt
-vj.txt
 examples/
 lists/
-continue.txt
-continue2.txt
+page_list*.txt
+continue*.txt
 user-password.py
 logs.txt
 sandbox.py

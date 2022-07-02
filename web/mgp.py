@@ -11,6 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 from pywikibot import Page
 
+import config.config
 from utils import string_utils
 from config.config import replacement_redo_limit
 from utils.japanese_utils import get_invalid_furigana
@@ -216,11 +217,11 @@ def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool
     return False
 
 
-def fetch_vj_songs(fetcher: Callable[[], list[str]]) -> list[str]:
+def fetch_pages(fetcher: Callable[[], list[str]]) -> list[str]:
     """
     Save VJ songs from MGP to a file.
     """
-    song_list_path = Path("vj.txt")
+    song_list_path = Path(f"page_list{config.config.get_mode().value}.txt")
     if not song_list_path.exists():
         with open(song_list_path, "w") as f:
             f.write("\n".join(map(str, fetcher())))

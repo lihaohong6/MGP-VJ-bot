@@ -1,4 +1,6 @@
 import logging
+import signal
+import time
 from json import JSONDecodeError
 from typing import Callable, Any
 
@@ -9,24 +11,27 @@ from utils.helpers import completed_task, get_resume_index, sleep_minutes
 from utils.input_utils import prompt_choices, prompt_response
 from utils.logger import get_logger
 from utils.string_utils import is_empty
-from web.mgp import fetch_vj_songs, get_vocaloid_japan_pages
+from web.mgp import fetch_pages, get_vocaloid_japan_pages
 
 
 def run_vj_bot(processor: Callable[[str], Any], manual: Callable = None,
-               fetch_song_list: Callable[[], list[str]] = get_vocaloid_japan_pages):
+               fetch_song_list: Callable[[], list[str]] = get_vocaloid_japan_pages, interruptible: bool = False):
     if manual is None:
         manual = get_manual_mode(processor)
     choice = prompt_choices("Mode?", ["Manual", "Auto"])
     if choice == 1:
         manual()
         return
-    songs: list[str] = fetch_vj_songs(fetch_song_list)
+    songs: list[str] = fetch_pages(fetch_song_list)
     # continue from where the bot stopped last time
     index = get_resume_index(songs)
     while index < len(songs):
         # process the current song in the list
         song = songs[index]
-        run_with_waf(processor, song)
+        if interruptible:
+            run_interruptible(lambda: run_with_waf(processor, song))
+        else:
+            run_with_waf(processor, song)
         # this song has been finished; disallow SIGINT while file io in progress
         completed_task(song)
         index += 1
@@ -62,6 +67,22 @@ def get_manual_mode(process_page: Callable[[str], None]):
     return manual_mode
 
 
-def throttle(time: int):
-    pass
+def throttle(throttle_time: int):
+    epoch_time = time.time()
+    sleep_time = throttle_time - (epoch_time - throttle.last_throttle)
+    if sleep_time > 0:
+        time.sleep(sleep_time)
+    throttle.last_throttle = time.time()
 
+
+throttle.last_throttle = 0
+
+
+def pause_handler(sig, frame):
+    input("Press Enter to continue...")
+
+
+def run_interruptible(f: callable, *args):
+    prev_handler = signal.signal(signal.SIGINT, pause_handler)
+    f(*args)
+    signal.signal(signal.SIGINT, prev_handler)

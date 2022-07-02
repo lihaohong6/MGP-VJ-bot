@@ -11,7 +11,7 @@ from utils.input_utils import prompt_choices, prompt_response
 from utils.logger import get_logger, log_str
 from utils.string_utils import is_empty
 from utils.wikitext import get_template_by_name, title_equal
-from web.mgp import fetch_vj_songs, get_page, save_edit
+from web.mgp import fetch_pages, get_page, save_edit
 import wikitextparser as wtp
 from wikitextparser import WikiText
 

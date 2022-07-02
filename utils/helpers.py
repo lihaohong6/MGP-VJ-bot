@@ -2,12 +2,13 @@ import signal
 from pathlib import Path
 from time import sleep
 
+import config.config
 from utils.logger import get_logger
 
 keep_sleeping: bool
 
 
-def wake_up():
+def wake_up(sig, frame):
     global keep_sleeping
     keep_sleeping = False
 
@@ -31,23 +32,26 @@ def sleep_minutes(minute: int):
         return
 
 
+cont_path = Path(f"continue{config.config.get_mode().value}.txt")
+
+
 def get_resume_index(lst: list) -> int:
     index = 0
-    cont = Path("continue.txt")
-    if cont.exists():
-        with open(cont, "r") as f:
+    if cont_path.exists():
+        with open(cont_path, "r") as f:
             start = f.readline().strip()
-        while lst[index] != start:
+        while index < len(lst) and lst[index] != start:
             index += 1
         index += 1
-    get_logger().info("Resuming with " + str(lst[index]))
+    if index >= len(lst):
+        index = 0
+    get_logger().info("Resuming with index " + str(index) + ": " + str(lst[index]))
     return index
 
 
 def completed_task(t: str):
-    cont = Path("continue.txt")
     prev_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-    with open(cont, "w") as f:
+    with open(cont_path, "w") as f:
         f.write(str(t))
         f.flush()
     signal.signal(signal.SIGINT, prev_handler)

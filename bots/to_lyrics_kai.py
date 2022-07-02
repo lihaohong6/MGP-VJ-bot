@@ -7,7 +7,7 @@ import webbrowser
 import wikitextparser as wtp
 from wikitextparser import Template
 
-from bots.common import run_vj_bot, run_with_waf
+from bots.common import run_vj_bot, run_with_waf, throttle
 from bots.youtube_fallback import transform_wikitext
 from utils.input_utils import prompt_response, prompt_choices
 from utils.japanese_utils import furigana_local
@@ -202,21 +202,13 @@ def process_song(song_name: str):
     if res is None:
         return
     wikitext = str(res)
-    epoch_time = int(time.time())
-    put_throttle = 20
-    sleep_time = put_throttle - (epoch_time - process_song.throttle)
-    if sleep_time > 0:
-        time.sleep(sleep_time)
-    process_song.throttle = int(time.time())
+    throttle(20)
     save_edit(wikitext, page,
               "由[[User:Lihaohong/LyricsKai转换工具|半自动工具]]自动使用[[T:LyricsKai" + ("/hover" if hover else "") + "]]模板",
               confirm=False, minor=True, watch="watch")
     webbrowser.get().open("https://zh.moegirl.org.cn/" + urllib.parse.quote(song_name),
                           new=2,
                           autoraise=False)
-
-
-process_song.throttle = 0
 
 
 def manual():
@@ -231,4 +223,4 @@ def manual():
 
 
 def lyrics_kai():
-    run_vj_bot(process_song, manual, lambda: get_pages_embedded("T:Lyrics"))
+    run_vj_bot(process_song, manual, lambda: get_pages_embedded("T:Lyrics"), interruptible=True)

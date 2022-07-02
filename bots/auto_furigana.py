@@ -14,7 +14,7 @@ from models.lyrics import Type
 from utils.input_utils import prompt_response, prompt_choices
 from utils.logger import get_logger
 from utils.string_utils import extract_lyrics_kai, extract_japanese_lyrics
-from web.mgp import MGPPage, replace_lyrics_jap, save_edit, get_page, fetch_vj_songs
+from web.mgp import MGPPage, replace_lyrics_jap, save_edit, get_page, fetch_pages
 from web.vocaloid_lyrics_wiki import get_romaji
 
 
