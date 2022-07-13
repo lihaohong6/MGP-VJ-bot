@@ -15,7 +15,7 @@ from web.mgp import fetch_pages, get_vocaloid_japan_pages
 
 
 def run_vj_bot(processor: Callable[[str], Any], manual: Callable = None,
-               fetch_song_list: Callable[[], list[str]] = get_vocaloid_japan_pages, interruptible: bool = False):
+               fetch_song_list: Callable[[], list[str]] = get_vocaloid_japan_pages):
     if manual is None:
         manual = get_manual_mode(processor)
     choice = prompt_choices("Mode?", ["Manual", "Auto"])
@@ -28,10 +28,7 @@ def run_vj_bot(processor: Callable[[str], Any], manual: Callable = None,
     while index < len(songs):
         # process the current song in the list
         song = songs[index]
-        if interruptible:
-            run_interruptible(lambda: run_with_waf(processor, song))
-        else:
-            run_with_waf(processor, song)
+        run_with_waf(processor, song)
         # this song has been finished; disallow SIGINT while file io in progress
         completed_task(song)
         index += 1
@@ -76,13 +73,3 @@ def throttle(throttle_time: int):
 
 
 throttle.last_throttle = 0
-
-
-def pause_handler(sig, frame):
-    input("Press Enter to continue...")
-
-
-def run_interruptible(f: callable, *args):
-    prev_handler = signal.signal(signal.SIGINT, pause_handler)
-    f(*args)
-    signal.signal(signal.SIGINT, prev_handler)

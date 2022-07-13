@@ -204,8 +204,8 @@ def process_song(song_name: str):
     wikitext = str(res)
     throttle(20)
     save_edit(wikitext, page,
-              "由[[User:Lihaohong/LyricsKai转换工具|半自动工具]]自动使用[[T:LyricsKai" + ("/hover" if hover else "") + "]]模板",
-              confirm=False, minor=True, watch="watch")
+              "由[[User:Lihaohong/LyricsKai转换工具|自动化工具]]自动使用[[T:LyricsKai" + ("/hover" if hover else "") + "]]模板",
+              confirm=False, minor=True, watch="watch", tags="Bot")
     webbrowser.get().open("https://zh.moegirl.org.cn/" + urllib.parse.quote(song_name),
                           new=2,
                           autoraise=False)
@@ -223,4 +223,4 @@ def manual():
 
 
 def lyrics_kai():
-    run_vj_bot(process_song, manual, lambda: get_pages_embedded("T:Lyrics"), interruptible=True)
+    run_vj_bot(process_song, manual, lambda: get_pages_embedded("T:Lyrics"))

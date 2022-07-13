@@ -53,7 +53,7 @@ def get_pages_in_cat(cat: str) -> list[str]:
     :return: A list of page names in this category.
     """
     result = []
-    url = "https://zh.moegirl.org.cn/api.php?action=query&list=categorymembers&format=json&cmnamespace=0" \
+    url = "https://mzh.moegirl.org.cn/api.php?action=query&list=categorymembers&format=json&cmnamespace=0" \
           f"&cmtitle=Category:{urllib.parse.quote(cat)}" \
           "&cmlimit=500&cmcontinue={}"
     prev = ""
@@ -68,6 +68,13 @@ def get_pages_in_cat(cat: str) -> list[str]:
             return result
         prev = response['continue']['cmcontinue']
         page_num += 1
+
+
+def get_references(title: str) -> list[str]:
+    s = pywikibot.Site()
+    page = Page(s, title)
+    res: list[Page] = list(page.getReferences(namespaces="0", with_template_inclusion=False))
+    return [p.title() for p in res]
 
 
 def get_pages_embedded(title: str) -> list[str]:
@@ -203,7 +210,8 @@ def replace_lyrics_jap(jap: str, words: list[Word], logs: ConversionLog) -> Opti
 edit_lock = asyncio.Lock()
 
 
-def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool, watch: str = "Watch") -> bool:
+def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool,
+              watch: str = "watch", tags: str = "Automation tool") -> bool:
     get_logger().info(
         "Pushing changes of " + str(page) +
         " url https://zh.moegirl.org.cn/" + urllib.parse.quote(page.title))
@@ -211,7 +219,7 @@ def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool
     get_logger().info(summary)
     if not confirm or prompt_choices("Save?", ["Yes", "No"]) == 1:
         page.pwb_page.save(summary=summary,
-                           watch=watch, minor=minor, asynchronous=False, botflag=True, tags="Automation tool")
+                           watch=watch, minor=minor, asynchronous=False, botflag=True, tags=tags)
         return True
     get_logger().info("Rejected changes proposed to " + page.title)
     return False
@@ -224,7 +232,11 @@ def fetch_pages(fetcher: Callable[[], list[str]]) -> list[str]:
     song_list_path = Path(f"page_list{config.config.get_mode().value}.txt")
     if not song_list_path.exists():
         with open(song_list_path, "w") as f:
-            f.write("\n".join(map(str, fetcher())))
+            result = fetcher()
+            if len(result) == 0:
+                get_logger().error("Resulting list is empty.")
+                raise Exception()
+            f.write("\n".join(map(str, result)))
     with open(song_list_path, "r") as f:
         songs: list[str] = f.readlines()
         get_logger().info("VJ song list loaded.")

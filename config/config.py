@@ -6,6 +6,7 @@ class Mode(Enum):
     AUTO_YOUTUBE_FALLBACK = 1
     AUTO_LYRICS_KAI = 2
     BILIBILI_VIDEO = 3
+    REPLACE_LINKS = 4
 
 
 waf_sleep: int = 15
