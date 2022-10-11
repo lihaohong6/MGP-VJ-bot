@@ -1,5 +1,6 @@
 import signal
 from json import JSONDecodeError
+from time import sleep
 from typing import Optional
 
 from pywikibot.exceptions import SiteDefinitionError
@@ -13,9 +14,10 @@ from models.conversion_log import ConversionLog
 from models.lyrics import Type
 from utils.input_utils import prompt_response, prompt_choices
 from utils.logger import get_logger
-from utils.string_utils import extract_lyrics_kai, extract_japanese_lyrics
+from utils.string_utils import extract_lyrics_kai, extract_japanese_lyrics, is_empty
 from web.mgp import MGPPage, replace_lyrics_jap, save_edit, get_page, fetch_pages
 from web.vocaloid_lyrics_wiki import get_romaji
+import wikitextparser as wtp
 
 
 def convert_page_text(page: MGPPage, log: ConversionLog) -> Optional[str]:
@@ -27,22 +29,27 @@ def convert_page_text(page: MGPPage, log: ConversionLog) -> Optional[str]:
     """
     # extract the indices of {{LyricsKai...}}
     get_logger().debug("Extracting LyricsKai")
-    lk = extract_lyrics_kai(page.wikitext)
-    if not lk:
-        get_logger().warning("Failed to extract LyricsKai from " + str(page))
-        return None
-    lyrics_kai_start, lyrics_kai_end = lk
-    # extract the content of LyricsKai
-    lyrics = page.wikitext[lyrics_kai_start:lyrics_kai_end]
-    # extract the indices of Japanese lyrics
-    get_logger().debug("Extracting Japanese lyrics")
-    lj = extract_japanese_lyrics(lyrics)
-    if not lj:
-        get_logger().warning("Failed to extract |original= from " + str(page))
-        return None
-    jap_start, jap_end = lj
+    parsed = wtp.parse(page.wikitext)
+    lyrics_kai = None
+    need_button = True
+    for t in parsed.templates:
+        if t.name.lower() == "LyricsKai/Roma/button".lower():
+            need_button = False
+        if "lyricskai" in t.name.lower() and t.has_arg("original"):
+            lyrics_kai = t
+    if lyrics_kai is None:
+        get_logger().error("Failed to extract LyricsKai from page " + page.title)
     # extract the str of the Japanese lyrics
-    lyrics_jap = lyrics[jap_start:jap_end]
+    lyrics_jap = lyrics_kai.get_arg("original").value
+    prepend = ""
+    lines = lyrics_jap.split("\n")
+    while True:
+        if "'''" in lines[0] or is_empty(lines[0]):
+            prepend += lines[0] + "\n"
+            lines.pop(0)
+        else:
+            break
+    lyrics_jap = "\n".join(lines)
     # decide if the lyrics are in Japanese and if it is already translated
     if not is_japanese_lyrics(lyrics_jap) or is_fully_translated(lyrics_jap):
         get_logger().warning(page.title + ("is not in Japanese. "
@@ -70,10 +77,11 @@ def convert_page_text(page: MGPPage, log: ConversionLog) -> Optional[str]:
     if lyrics_jap is None:
         get_logger().warning("Failed to replace original Kanji with photrans for " + str(page))
         return None
-    # add Photrans button and put everything together
-    lyrics = "{{Photrans/button|align=;float:right}}" + lyrics[:jap_start] + lyrics_jap + lyrics[jap_end:]
-    text = page.wikitext[:lyrics_kai_start] + lyrics + page.wikitext[lyrics_kai_end:]
-    return text
+    # add photrans button and put everything together
+    lyrics_kai.set_arg("original", prepend.lstrip() + lyrics_jap.rstrip())
+    if need_button:
+        lyrics_kai.string = "{{Photrans/button|float=1}}\n" + lyrics_kai.string
+    return str(parsed)
 
 
 def get_edit_summary(logs: ConversionLog):
@@ -121,8 +129,8 @@ def process_song(page_name: str) -> bool:
         get_logger().error(msg)
         if isinstance(e, JSONDecodeError) or isinstance(e, SiteDefinitionError):
             get_logger().error("{}.".format(e.__class__) +
-                               "MGP is probably unreachable due to WAF or DDOS. Will try again in 10 minutes.")
-            sleep_minutes(10)
+                               "MGP is probably unreachable due to WAF or DDOS. Will try again in 5 seconds.")
+            sleep(5)
             return process_song(page_name)
         else:
             get_logger().error("", exc_info=e)

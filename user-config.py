@@ -7,7 +7,7 @@
 # this variable, you have to ensure that such a file exists. You may use
 # generate_family_file to create one.
 mylang = 'mgp'
-family_files['mgp'] = 'https://mzh.moegirl.org.cn/api.php'
+family_files['mgp'] = 'https://zh.moegirl.org.cn/api.php'
 family = 'mgp'
 
 # The site code (language) of the site to be working on.

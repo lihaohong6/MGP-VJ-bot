@@ -4,6 +4,7 @@ import re
 import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
+from time import sleep
 from typing import List, Optional, Callable
 
 import pywikibot
@@ -218,9 +219,14 @@ def save_edit(text: str, page: MGPPage, summary: str, confirm: bool, minor: bool
     page.pwb_page.text = text
     get_logger().info(summary)
     if not confirm or prompt_choices("Save?", ["Yes", "No"]) == 1:
-        page.pwb_page.save(summary=summary,
-                           watch=watch, minor=minor, asynchronous=False, botflag=True, tags=tags)
-        return True
+        while True:
+            try:
+                page.pwb_page.save(summary=summary,
+                                   watch=watch, minor=minor, asynchronous=False, botflag=True, tags=tags)
+                return True
+            except Exception as e:
+                print(e)
+                sleep(5)
     get_logger().info("Rejected changes proposed to " + page.title)
     return False
 

@@ -205,7 +205,7 @@ def process_song(song_name: str):
     throttle(20)
     save_edit(wikitext, page,
               "由[[User:Lihaohong/LyricsKai转换工具|自动化工具]]自动使用[[T:LyricsKai" + ("/hover" if hover else "") + "]]模板",
-              confirm=False, minor=True, watch="watch", tags="Bot")
+              confirm=False, minor=True, watch="watch", tags="Automation tool")
     webbrowser.get().open("https://zh.moegirl.org.cn/" + urllib.parse.quote(song_name),
                           new=2,
                           autoraise=False)
